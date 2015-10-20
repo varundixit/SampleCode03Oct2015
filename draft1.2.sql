@@ -55,7 +55,7 @@ cast(month01 as double precision),cast(month02 as double precision),cast(month03
 cast(month04 as double precision),cast(month05 as double precision),cast(month06 as double precision),
 cast(month07 as double precision),cast(month08 as double precision),cast(month09 as double precision),
 cast(month10 as double precision),cast(month11 as double precision),cast(month12 as double precision),
-src,cast(trim(FY) as double precision) from public.executive_summary_stg_all
+src,cast(trim(FY) as double precision) from public.executive_summary_stg
 where trim(Country) != 'Country'
 );
 
@@ -92,6 +92,7 @@ where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Bonuses acquisition'
 update executive_summary a
 set items='Bonuses acquisition'
 where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Bonus acquisition TOBU_TEMP' ;
+
 
 insert into executive_summary(
 select a.country,a.datayear,a.datatype,'Bonus ret TOBU_TEMP' items,null source,
@@ -649,7 +650,6 @@ player_cnt,
 from player_value_Data
 where (mon_beg_bet_resolve_date_nvp-mon_begin_first_deposit) > 0 
 and (mon_beg_bet_resolve_date_nvp-mon_begin_first_deposit) < 32);
-
 insert into executive_summary (select cr_src_country,yyy,
 'ACTUALS - '||upper(str_dis_channel) datatype,'FTD' items,'019' source
 ,sum(month01),sum(month02),sum(month03),sum(month04),sum(month05),sum(month06)
@@ -675,8 +675,7 @@ group by cr_src_country,date_part('YEAR',mon_begin_first_deposit),date_part('MON
 group by cr_src_country,yyy,datatype,upper(str_dis_channel));*/
 
 insert into executive_summary (
-select cr_src_country,yyy,
-'ACTUALS - ONLINE' datatype,'FTD' items,'019' source
+select cr_src_country,yyy,'ACTUALS - ONLINE' datatype,'FTD' items,'019' source
 ,sum(month01),sum(month02),sum(month03),sum(month04),sum(month05),sum(month06)
 ,sum(month07),sum(month08),sum(month09),sum(month10),sum(month11),sum(month12),null src,null fy 
 from (
@@ -1459,7 +1458,8 @@ from
 (select a.country,a.datayear,a.datatype,a.items, 
 a.month01, a.month02, a.month03, a.month04, a.month05, a.month06, 
 a.month07, a.month08, a.month09, a.month10, a.month11, a.month12  
-from executive_summary a where a.datatype = 'ACTUALS - ONLINE' and a.items = 'UAP') UAP,
+from executive_summary a 
+where a.datatype = 'ACTUALS - ONLINE' and a.items = 'UAP') UAP,
 (select a.country,a.datayear,a.datatype,a.items, 
 a.month01, a.month02, a.month03, a.month04, a.month05, a.month06, 
 a.month07, a.month08, a.month09, a.month10, a.month11, a.month12  
@@ -1773,14 +1773,33 @@ and WAP.country = MAPD.country
 and WAP.country = TAP.country
 and WAP.country = OAPD.country );
 
-
-
-
-
-
-
-
-
+----------------PV to CPA ratio (24 months value)
+insert into executive_summary (
+select acpa.country,acpa.datayear, 'ACTUALS - TOTAL BUSINESS' datatype,'PV to CPA ratio (24 months value)' items, null source,
+m.month01/acpa.month01 month01,
+m.month02/acpa.month02 month02,
+m.month03/acpa.month03 month03,
+m.month04/acpa.month04 month04,
+m.month05/acpa.month05 month05,
+m.month06/acpa.month06 month06,
+m.month07/acpa.month07 month07,
+m.month08/acpa.month08 month08,
+m.month09/acpa.month09 month09,
+m.month10/acpa.month10 month10,
+m.month11/acpa.month11 month11,
+m.month12/acpa.month12 month12,
+null src, null fy 
+from 
+(select a.country,a.datayear,a.datatype,a.items, 
+a.month01, a.month02, a.month03, a.month04, a.month05, a.month06, 
+a.month07, a.month08, a.month09, a.month10, a.month11, a.month12  
+from executive_summary a 
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and datayear in (2014, 2015) and a.items = 'Average cost per acquisition (CPA)') acpa,
+(select a.country,a.datayear,a.datatype,a.items, 
+a.month01, a.month02, a.month03, a.month04, a.month05, a.month06, 
+a.month07, a.month08, a.month09, a.month10, a.month11, a.month12  
+from executive_summary a where a.datatype = 'PlayerValue' and datayear in (2014, 2015) and a.items = 'M24') m
+where m.country = acpa.country and m.datayear = acpa.datayear);
 
 
 
@@ -1810,73 +1829,85 @@ select 101 seq,a.country,a.datatype,a.items,
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15, a.month09*1000 Sep15, a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14, b.month09*1000 Sep14, b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Stake amount' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Stake amount' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 102 seq,a.country,a.datatype,a.items, 
 a.month01*1000  Jan15 ,a.month02*1000  Feb15, a.month03*1000  Mar15 ,a.month04*1000  Apr15 ,a.month05*1000  May15, a.month06*1000  Jun15 ,a.month07*1000  Jul15 ,a.month08*1000  Aug15 ,a.month09*1000  Sep15,a.month10*1000  Oct15 ,a.month11*1000  Nov15 ,a.month12*1000  Dec15 ,
 b.month01*1000  Jan14 ,b.month02*1000  Feb14, b.month03*1000  Mar14 ,b.month04*1000  Apr14 ,b.month05*1000  May14, b.month06*1000  Jun14 ,b.month07*1000  Jul14 ,b.month08*1000  Aug14 ,b.month09*1000  Sep14,b.month10*1000  Oct14 ,b.month11*1000  Nov14 ,b.month12*1000  Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Net Gross Win' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Net Gross Win' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 103 seq,a.country,a.datatype,a.items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Active Players' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Active Players' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 104 seq,a.country,a.datatype,a.items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Database' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Database' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 105 seq,a.country,a.datatype,a.items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='First Time Depositors' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='First Time Depositors' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 106 seq,a.country,a.datatype,a.items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Active Player Days' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Active Player Days' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 107 seq,a.country,a.datatype,a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000  Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000  Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='NGW per UAP' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='NGW per UAP' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 108 seq,a.country,a.datatype,a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Stake per APD' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Stake per APD' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 109 seq,a.country,a.datatype,a.items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='NGW Margin' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='NGW Margin' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 110 seq,a.country,a.datatype,a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Player Yeild' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Player Yeild' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 111 seq,a.country,a.datatype,a.items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Player Churn Rate' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Player Churn Rate' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 112 seq,a.country,a.datatype,'Frequency' items, 
+select 112 seq,a.country,a.datatype,'Player Frequency' items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Frequency' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Frequency' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 113 seq,a.country,a.datatype,a.items items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
@@ -1888,434 +1919,409 @@ select 114 seq,a.country,a.datatype,'Overall Bonus Cost' items,
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Bonuses Total (PL_150_03_00)' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Bonuses Total (PL_150_03_00)' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 115 seq,a.country,a.datatype,a.items items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Bonus cost % of NGW' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Bonus cost % of NGW' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 116 seq,a.country,a.datatype,a.items items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Bonus Cost per Active Customer' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Bonus Cost per Active Customer' and 
+a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 117 seq,a.country,a.datatype,a.items items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Aquisition % of Total Bonus' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Aquisition % of Total Bonus' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 118 seq,a.country,a.datatype,a.items items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Retention % of Total Bonus' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Retention % of Total Bonus' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 119 seq,a.country,a.datatype,'Overall Marketing Spent' items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Marketing (PL_250_04)' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Marketing (PL_250_04)' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 120 seq,a.country,a.datatype,a.items items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Marketing Spent Non Affiliates' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Marketing Spent Non Affiliates' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 121 seq,a.country,a.datatype,'Marketing Spent Affiliates' items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Affiliate marketing' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Affiliate marketing' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 122 seq,a.country,a.datatype,a.items items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Affiliates Cost as % of NGW' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Affiliates Cost as % of NGW' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 123 seq,a.country,a.datatype,a.items items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15, a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14, b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Average cost per acquisition (CPA)' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 124 seq,'--','ACTUALS - TOTAL BUSINESS','PV to CPA ratio (24 months value)', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 125 seq,'--','ACTUALS - TOTAL BUSINESS','Player Value M1', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 126 seq,'--','ACTUALS - TOTAL BUSINESS','Player Value M3', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 127 seq,'--','ACTUALS - TOTAL BUSINESS','Player Value M6', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 128 seq,'--','ACTUALS - TOTAL BUSINESS','Player Value M12', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 129 seq,'--','ACTUALS - TOTAL BUSINESS','Player Value M24', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 130 seq,'--','ACTUALS - TOTAL BUSINESS','M3 Retention Rate', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 131 seq,'--','ACTUALS - TOTAL BUSINESS','M6 Retention Rate', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 132 seq,'--','ACTUALS - TOTAL BUSINESS','M12 Retention Rate', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 133 seq,'--','ACTUALS - TOTAL BUSINESS','M24 Retention Rate', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
-
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Average cost per acquisition (CPA)' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 201 seq,a.country,a.datatype,a.items items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15, a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14, b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Stake amount' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Stake amount' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 202 seq,a.country,a.datatype,a.items items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15, a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14, b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Net Gross Win' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Net Gross Win' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 203 seq,a.country,a.datatype,a.items items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='UAP' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='UAP' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 204 seq,a.country,a.datatype,a.items items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Database' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Database' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 205 seq,a.country,a.datatype,'Retail First Time Depositors' items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='FTD' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='FTD' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 206 seq,a.country,a.datatype,'Retail Active Player Days' items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='APD' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='APD' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 207 seq,a.country,a.datatype,a.items items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15 ,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Net Gross Win per Unique active customer/player' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 208 seq,a.country,a.datatype,a.items items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15 ,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14, b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Stake amount per active player days' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 209 seq,a.country,a.datatype, 'Retail Net gross win margin' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
+a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail NGW Margin' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='NGW per UAP' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 210 seq,a.country,a.datatype,'Retail Player Yield per Active Player' items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15 ,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14, b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+select 208 seq,a.country,a.datatype,a.items items, 
+a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
+b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Player Yeild per UAP' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Stake per APD' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+
+union
+select 209 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail NGW Margin' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 210 seq,a.country,a.datatype,a.items items, 
+a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
+b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Player Yeild per UAP' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 211 seq,a.country,a.datatype,'Retail Player Churn Rate' items, 
 a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
 b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Player Churn Rate' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Stake amount known customers' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 212 seq,a.country,a.datatype,'Retail Stake amount anonymous customers' items, 
+select 212 seq,a.country,a.datatype,a.items items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15, a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14, b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Stake amount anonymous customers' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Stake amount anonymous customers' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 213 seq,a.country,a.datatype,'Retail Stake amount known customers' items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15 ,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+select 213 seq,a.country,a.datatype,a.items items, 
+a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
+b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Stake amount known customers' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 214 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Stake amount known customers' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Stake Share' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 214 seq,a.country,a.datatype, 'Retail Stake Amount Share' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
+select 215 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Stake Share' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Annonymous Stake Share' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 215 seq,a.country,a.datatype, 'Retail Anonymous player stake share' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
+select 216 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Annonymous Stake Share' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 216 seq,a.country,a.datatype, 'Retail Known player stake share' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Known Stake Share' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 217 seq,'--','ACTUALS - RETAIL','Retail Channel Player values', 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14,null Oct14 ,null Nov14 ,null Dec14 
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Known Stake Share' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 218 seq,a.country,a.datatype, a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Marketing Spend' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Marketing Spend' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
 select 219 seq,a.country,a.datatype, a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Bonus Cost' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Bonus Cost' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 220 seq,a.country,a.datatype,'Retail Anonymous player gross win amount' items, 
+select 220 seq,a.country,a.datatype,a.items items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15, a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14, b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Gross win anonymous players' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Gross win anonymous players' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 221 seq,a.country,a.datatype,a.items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000  Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000  Nov14 ,b.month12*1000 Dec14 
+select 329 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Anonymous player Net gross win amount' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Online Marketing Spend' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 union
-select 222 seq,a.country,a.datatype,a.items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000  Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000  Nov14 ,b.month12*1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - RETAIL' and a.items ='Retail Known player Net gross win amount' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-/*union
 select 307 seq,a.country,a.datatype, a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Net Gross Win' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Net Gross Win' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+
 union
 select 308 seq,a.country,a.datatype, a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web NGW' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web NGW' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 
 union
 select 309 seq,a.country,a.datatype, a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile NGW' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-*/
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile NGW' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 
 union
-select 301 seq,a.country,a.datatype, 'Online Stake Amount' items, 
+select 302 seq,a.country,a.datatype, a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Stake amount' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 302 seq,a.country,a.datatype, 'Web Stake amount' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05  May15, a.month06  Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05  May14, b.month06  Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web Stake' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 303 seq,a.country,a.datatype, 'Mobile Stake amount' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile Stake' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 304 seq,a.country,a.datatype, 'Online Stake amount Share' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Online Stake Share' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web Stake' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 
 union
-select 305 seq,a.country,a.datatype, 'Web stake amount share' items, 
-a.month01/1000 Jan15 ,a.month02/1000 Feb15, a.month03/1000 Mar15 ,a.month04/1000 Apr15 ,a.month05/1000 May15, a.month06/1000 Jun15 ,a.month07/1000 Jul15 ,a.month08/1000 Aug15 ,a.month09/1000 Sep15,a.month10/1000 Oct15 ,a.month11/1000 Nov15 ,a.month12/1000 Dec15 ,
-b.month01/1000 Jan14 ,b.month02/1000 Feb14, b.month03/1000 Mar14 ,b.month04/1000 Apr14 ,b.month05/1000 May14, b.month06/1000 Jun14 ,b.month07/1000 Jul14 ,b.month08/1000 Aug14 ,b.month09/1000 Sep14,b.month10/1000 Oct14 ,b.month11/1000 Nov14 ,b.month12/1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web Stake Share' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-union
-select 306 seq,a.country,a.datatype, 'Mobile Stake amount Share' items, 
-a.month01/1000 Jan15 ,a.month02/1000 Feb15, a.month03/1000 Mar15 ,a.month04/1000 Apr15 ,a.month05/1000 May15, a.month06/1000 Jun15 ,a.month07/1000 Jul15 ,a.month08/1000 Aug15 ,a.month09/1000 Sep15,a.month10/1000 Oct15 ,a.month11/1000 Nov15 ,a.month12/1000 Dec15 ,
-b.month01/1000 Jan14 ,b.month02/1000 Feb14, b.month03/1000 Mar14 ,b.month04/1000 Apr14 ,b.month05/1000 May14, b.month06/1000 Jun14 ,b.month07/1000 Jul14 ,b.month08/1000 Aug14 ,b.month09/1000 Sep14,b.month10/1000 Oct14 ,b.month11/1000 Nov14 ,b.month12/1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile Stake Share' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-union
-select 307 seq,a.country,a.datatype, 'Online Net Gross Win' items, 
+select 303 seq,a.country,a.datatype, a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype='ACTUALS - ONLINE' and a.items='Net Gross Win' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile Stake' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 
 union
-select 308 seq,a.country,a.datatype, 'Web Net Gross Win' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype='ACTUALS - ONLINE' and a.items='Web NGW' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 309 seq,a.country,a.datatype, 'Mobile Net Gross Win' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype='ACTUALS - ONLINE' and a.items='Mobile NGW' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-union
-select 310 seq,a.country,a.datatype, 'Online Active Customers' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Online UAP' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-
-union
-select 311 seq,a.country,a.datatype, 'Web Active Customers' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web UAP' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-union
-select 312 seq,a.country,a.datatype, 'Mobile Active Customers' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile UAP' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-union
-select 313 seq,a.country,a.datatype, 'Online Database' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Database' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 314 seq,a.country,a.datatype,'Online First Time Depositors' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='FTD' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 315 seq,'--','ACTUALS - ONLINE','Web First Time Depositors' items, 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15 ,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14 ,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 316 seq,'--','ACTUALS - ONLINE','Mobile First Time Depositors' items, 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15 ,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14 ,null Oct14 ,null Nov14 ,null Dec14 
-
-union
-select 317 seq,a.country,a.datatype,'Online Active Player Days' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='APD' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-union
-select 318 seq,a.country,a.datatype,'Web Active Player Days' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web APD' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-union
-select 319 seq,a.country,a.datatype, 'Mobile Acitve Player Days' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15 ,a.month10 Oct15 ,a.month11 Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11 Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile APD' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-
-union
-select 320 seq,a.country,a.datatype,'Online Net Gross Win per Unique active customer/player' items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000  Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000  Nov14 ,b.month12*1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='NGW per UAP' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 321 seq,a.country,a.datatype,'Online Stake amount per active player days' items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000  Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000  Nov14 ,b.month12*1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Stake per APD' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 322 seq,a.country,a.datatype,'Online Net gross win margin' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11  Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11  Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Online NGW Margin' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 323 seq,a.country,a.datatype,a.items items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11  Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11  Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web Net Gross Win Margins' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 324 seq,a.country,a.datatype,a.items items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11  Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11  Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile Net Gross Win Margins' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 325 seq,a.country,a.datatype,'Online Player Yield per Active Player' items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000  Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000  Nov14 ,b.month12*1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Player Yeild per UAP' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 326 seq,a.country,a.datatype,'Online Player Churn Rate' items, 
-a.month01 Jan15 ,a.month02 Feb15, a.month03 Mar15 ,a.month04 Apr15 ,a.month05 May15, a.month06 Jun15 ,a.month07 Jul15 ,a.month08 Aug15 ,a.month09 Sep15,a.month10 Oct15 ,a.month11  Nov15 ,a.month12 Dec15 ,
-b.month01 Jan14 ,b.month02 Feb14, b.month03 Mar14 ,b.month04 Apr14 ,b.month05 May14, b.month06 Jun14 ,b.month07 Jul14 ,b.month08 Aug14 ,b.month09 Sep14,b.month10 Oct14 ,b.month11  Nov14 ,b.month12 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Player Churn Rate' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 327 seq,'--','ACTUALS - ONLINE','Online channel Player values' items, 
-null Jan15 ,null Feb15, null Mar15 ,null Apr15 ,null May15, null Jun15 ,null Jul15 ,null Aug15 ,null Sep15 ,null Oct15 ,null Nov15 ,null Dec15 ,
-null Jan14 ,null Feb14, null Mar14 ,null Apr14 ,null May14, null Jun14 ,null Jul14 ,null Aug14 ,null Sep14 ,null Oct14 ,null Nov14 ,null Dec14 
-union
-select 328 seq,a.country,a.datatype,a.items, 
-a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000  Nov15 ,a.month12*1000 Dec15 ,
-b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000  Nov14 ,b.month12*1000 Dec14 
-from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Online Bonus Cost' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
-union
-select 329 seq,a.country,a.datatype, a.items, 
+select 301 seq,a.country,a.datatype, a.items, 
 a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
 b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
 from executive_summary a,executive_summary b 
-where a.datatype = 'ACTUALS - ONLINE' and a.items ='Online Marketing Spend' and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Stake amount' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
 
+union
+select 304 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Online Stake Share' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+
+
+union
+select 305 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Web Stake Share' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+
+
+union
+select 306 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Mobile Stake Share' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+
+
+select 130 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Grosswin = Amount staked + Handling fee - Payouts' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 230 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Grosswin = Amount staked + Handling fee - Payouts' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 330 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Grosswin = Amount staked + Handling fee - Payouts' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+
+select 131 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Betting tax' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 231 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Betting tax' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 331 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Betting tax' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+
+select 132 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Net Gaming Revenue' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 232 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Net Gaming Revenue' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 332 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Net Gaming Revenue' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+
+select 133 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='Net contribution' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 233 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - RETAIL' and a.items ='Net contribution' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 333 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - ONLINE' and a.items ='Net contribution' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select 134 seq,a.country,a.datatype, a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='EBITDA' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items and a.datayear = 2015 and b.datayear = 2014
+union
+select case a.items 
+when 'M1' then 125 
+when 'M3' then 126
+when 'M6' then 127
+when 'M12' then 128
+when 'M24' then 129 end seq,a.country,a.datatype, a.datatype||' '||a.items, 
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'PlayerValue' and a.items in ('M1','M3','M6','M12','M24') 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items 
+and a.datayear = 2015 and b.datayear = 2014
+union
+select case a.items 
+when 'M3' then 130
+when 'M6' then 131
+when 'M12' then 132
+when 'M24' then 133 end seq,a.country,a.datatype, a.items||case length(a.items) when 2 then '  Retention Rate' else ' Retention Rate' end items,
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'Retention' and a.items in ('M3','M6','M12','M24') 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items 
+and a.datayear = 2015 and b.datayear = 2014
+
+union
+select 124 seq,a.country,a.datatype, a.items items,
+a.month01*1000 Jan15 ,a.month02*1000 Feb15, a.month03*1000 Mar15 ,a.month04*1000 Apr15 ,a.month05*1000 May15, a.month06*1000 Jun15 ,a.month07*1000 Jul15 ,a.month08*1000 Aug15 ,a.month09*1000 Sep15,a.month10*1000 Oct15 ,a.month11*1000 Nov15 ,a.month12*1000 Dec15 ,
+b.month01*1000 Jan14 ,b.month02*1000 Feb14, b.month03*1000 Mar14 ,b.month04*1000 Apr14 ,b.month05*1000 May14, b.month06*1000 Jun14 ,b.month07*1000 Jul14 ,b.month08*1000 Aug14 ,b.month09*1000 Sep14,b.month10*1000 Oct14 ,b.month11*1000 Nov14 ,b.month12*1000 Dec14 
+from executive_summary a,executive_summary b 
+where a.datatype = 'ACTUALS - TOTAL BUSINESS' and a.items ='PV to CPA ratio (24 months value)' 
+and a.country = b.country and a.datatype = b.datatype and a.items = b.items 
+and a.datayear = 2015 and b.datayear = 2014
 order by seq) ab;
